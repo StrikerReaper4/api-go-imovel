@@ -151,7 +151,7 @@ func UpdateImovel(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("🔍 Recebido para atualização: %+v\n", imovel) // <-- ADICIONE ISSO
+	fmt.Printf("🔍 Recebido para atualização: %+v\n", imovel)
 	rowsAffected, err := service.UpdateImovelService(imovel)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
