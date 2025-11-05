@@ -35,6 +35,12 @@ func main() {
 	})
 
 	handler := c.Handler(http.DefaultServeMux)
+	
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // fallback para rodar localmente
+	}
+	
 	log.Println("Servidor rodando na porta 8080...")
 	log.Fatal(http.ListenAndServe(":8080", handler))
 
