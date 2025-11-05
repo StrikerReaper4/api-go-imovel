@@ -208,6 +208,7 @@ func UpdateImovelRepository(imovel model.AtualizarImovel) (int, error) {
 	}
 
 	if len(fields) == 0 {
+		log.Printf("⚠️ Nenhum campo foi enviado para atualização do imóvel ID %d\n", imovel.IdImovel)
 		return 0, fmt.Errorf("nenhum campo para atualizar")
 	}
 
