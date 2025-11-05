@@ -9,7 +9,7 @@ type Pessoa struct {
 }
 
 type Imovel struct {
-	Id         int    `json:"id_imovel"`
+	Id         int    `json:"ind"`
 	Tipo       string `json:"tipo"`
 	Rua        string `json:"rua"`
 	Numero     string `json:"numero"`
