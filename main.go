@@ -41,7 +41,7 @@ func main() {
 		port = "8080" // fallback para rodar localmente
 	}
 	
-	log.Println("Servidor rodando na porta 8080...")
+	log.Println("Servidor rodando na porta %s...", port)
 	log.Fatal(http.ListenAndServe(":8080", handler))
 
 }
