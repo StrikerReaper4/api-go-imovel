@@ -61,6 +61,8 @@ func Login(w http.ResponseWriter, r * http.Request){
 
 	p, token , err := service.LoginService(login.Email, login.Senha)
 	
+	log.Println("Confirmando:",p)
+	
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

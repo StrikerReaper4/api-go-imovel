@@ -30,7 +30,7 @@ func FindByEmail(email string) (model.Pessoa, error) {
 		FROM pessoas
 		WHERE email = $1
 	`, email)
-
+	log.Println("Usuario encontrado",p)
 	err := row.Scan(&p.Id, &p.Nome, &p.Email, &p.Senha, &p.Role)
 	if err != nil {
 		return model.Pessoa{}, err
