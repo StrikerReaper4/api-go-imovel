@@ -5,6 +5,7 @@ import (
 	"apiGo/service"
 	"encoding/json"
 	"net/http"
+	"log"
 )
 
 func Handler(w http.ResponseWriter, r *http.Request){
@@ -62,7 +63,7 @@ func Login(w http.ResponseWriter, r * http.Request){
 	p, token , err := service.LoginService(login.Email, login.Senha)
 	
 	log.Println("Confirmando:",p)
-	
+
 	if err != nil{
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

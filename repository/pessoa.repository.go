@@ -3,6 +3,7 @@ package repository
 import (
 	"apiGo/config"
 	"apiGo/model"
+	"log"
 )
 
 // Insere uma nova pessoa no banco
