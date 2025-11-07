@@ -42,6 +42,7 @@ type TokenResponse struct {
 }
 
 type Filtro struct {
+	Pais      string `json:"pais"`
 	Situacao  string `json:"situacao"`
 	Tipo      string `json:"tipo"`
 	Estado    string `json:"estado"`
@@ -55,17 +56,21 @@ type Filtro struct {
 }
 
 type AtualizarImovel struct {
-	IdImovel  int    `json:"id"`
-	Estado    string `json:"estado"`
-	Cidade    string `json:"cidade"`
-	Bairro    string `json:"bairro"`
 	Situacao  string `json:"situacao"`
+	IdImovel  int    `json:"id"`
 	Tipo      string `json:"tipo"`
-	Valor     int    `json:"valor"`
+	Rua       string `json:"rua"`
+	Numero    string `json:"numero"`
+	Bairro    string `json:"bairro"`
+	Cidade    string `json:"cidade"`
+	Estado    string `json:"estado"`
+	Cep       string `json:"cep"`
+	Pais      string `json:"pais"`
+	Area      int    `json:"area"`
 	Quartos   int    `json:"quartos"`
 	Banheiros int    `json:"banheiros"`
 	Vagas     int    `json:"vagas"`
-	Area      int    `json:"area"`
+	Valor     int    `json:"valor"`
 	Descricao string `json:"descricao"`
 	Imagem    []byte `json:"imagem"`
 }
