@@ -56,8 +56,8 @@ type Filtro struct {
 }
 
 type AtualizarImovel struct {
-	Situacao  string `json:"situacao"`
 	IdImovel  int    `json:"id"`
+	Situacao  string `json:"situacao"`
 	Tipo      string `json:"tipo"`
 	Rua       string `json:"rua"`
 	Numero    string `json:"numero"`

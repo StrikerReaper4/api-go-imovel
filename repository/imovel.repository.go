@@ -166,11 +166,41 @@ func UpdateImovelRepository(imovel model.AtualizarImovel) (int, error) {
 		args = append(args, imovel.Bairro)
 		paramIndex++
 	}
+	if imovel.Rua != ""{
+		fields = append(fields, fmt.Sprintf("rua = $%d", paramIndex))
+		args = append(args, imovel.Rua)
+		paramIndex++
+	}
+
+	if imovel.Pais != ""{
+		fields = append(fields, fmt.Sprintf("pais = $%d", paramIndex))
+		args = append(args, imovel.Pais)
+		paramIndex++
+	}
+
 	if imovel.Situacao != "" {
 		fields = append(fields, fmt.Sprintf("situacao = $%d", paramIndex))
 		args = append(args, imovel.Situacao)
 		paramIndex++
 	}
+
+	if imovel.Cep != ""{
+		fields = append(fields, fmt.Sprintf("cep = $%d", paramIndex))
+		args = append(args, imovel.Cep)
+		paramIndex++
+	}
+
+	if imovel.Numero != "" {
+		fields = append(fields, fmt.Sprintf("numero = $%d", paramIndex))
+		args = append(args, imovel.Numero)
+		paramIndex++
+	}
+	if imovel.Vagas != 0 {
+		fields = append(fields, fmt.Sprintf("vagas = $%d", paramIndex))
+		args = append(args, imovel.Vagas)
+		paramIndex++
+	}
+
 	if imovel.Tipo != "" {
 		fields = append(fields, fmt.Sprintf("tipo = $%d", paramIndex))
 		args = append(args, imovel.Tipo)
