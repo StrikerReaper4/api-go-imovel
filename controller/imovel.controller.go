@@ -144,25 +144,71 @@ func DeleteImovel(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateImovel(w http.ResponseWriter, r *http.Request) {
-	var imovel model.AtualizarImovel
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&imovel)
+	// 🔹 Primeiro: parseia o formulário
+	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, "Erro ao processar formulário: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Printf("🔍 Recebido para atualização: %+v\n", imovel)
+
+	// 🔹 Converte ID
+	id := parseInt(r.FormValue("id"))
+	if id == 0 {
+		http.Error(w, "ID do imóvel é obrigatório", http.StatusBadRequest)
+		return
+	}
+
+	// 🔹 Lê imagem, se enviada
+	var imagemBytes []byte
+	file, _, err := r.FormFile("imagem")
+	if err == nil {
+		defer file.Close()
+		imagemBytes, err = io.ReadAll(file)
+		if err != nil {
+			http.Error(w, "Erro ao ler bytes da imagem: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		fmt.Println("⚠️ Nenhuma imagem enviada, seguindo sem arquivo.")
+	}
+
+	// 🔹 Monta struct
+	imovel := model.AtualizarImovel{
+		IdImovel:  id,
+		Tipo:      r.FormValue("tipo"),
+		Rua:       r.FormValue("rua"),
+		Numero:    r.FormValue("numero"),
+		Bairro:    r.FormValue("bairro"),
+		Cidade:    r.FormValue("cidade"),
+		Estado:    r.FormValue("estado"),
+		Cep:       r.FormValue("cep"),
+		Pais:      r.FormValue("pais"),
+		Area:      parseInt(r.FormValue("area")),
+		Quartos:   parseInt(r.FormValue("quartos")),
+		Banheiros: parseInt(r.FormValue("banheiros")),
+		Vagas:     parseInt(r.FormValue("vagas")),
+		Valor:     parseInt(r.FormValue("valor")),
+		Situacao:  r.FormValue("situacao"),
+		Descricao: r.FormValue("descricao"),
+		Imagem:    imagemBytes,
+	}
+
+	// 🔹 Chama o service
 	rowsAffected, err := service.UpdateImovelService(imovel)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(rowsAffected)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if rowsAffected == 0 {
+		http.Error(w, "Nenhum imóvel encontrado com esse ID", http.StatusNotFound)
+		return
 	}
 
-	log.Println("imovel atualizado com sucesso", rowsAffected)
+	// 🔹 Resposta JSON
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Imóvel atualizado com sucesso!",
+		"id":      imovel.IdImovel,
+	})
 }
