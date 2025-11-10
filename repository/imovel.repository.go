@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"github.com/lib/pq"
 )
 
 func InsertImovelRepository(im model.Imovel) (int, error) {
@@ -13,11 +14,11 @@ func InsertImovelRepository(im model.Imovel) (int, error) {
 	INSERT INTO imoveis (
 		tipo, rua, numero, bairro, cidade, estado, cep, pais,
 		area, quartos, banheiros, suites, vagas, andar,
-		valor, situacao, disponivel, descricao, imagem, id_pessoa
+		valor, situacao, disponivel, descricao, imagem, imagem_type, id_pessoa
 	) VALUES (
 		$1,$2,$3,$4,$5,$6,$7,$8,
 		$9,$10,$11,$12,$13,$14,
-		$15,$16,$17,$18,$19,$20
+		$15,$16,$17,$18,$19,$20,$21
 	) RETURNING id;
 	`
 
@@ -25,7 +26,7 @@ func InsertImovelRepository(im model.Imovel) (int, error) {
 	err := config.DB.QueryRow(query,
 		im.Tipo, im.Rua, im.Numero, im.Bairro, im.Cidade, im.Estado, im.Cep,
 		im.Pais, im.Area, im.Quartos, im.Banheiros, im.Suites, im.Vagas, im.Andar,
-		im.Valor, im.Situacao, im.Disponivel, im.Descricao, im.Imagem, im.IdPessoa,
+		im.Valor, im.Situacao, im.Disponivel, im.Descricao, pq.Array(im.Imagem), pq.Array(im.ImagemType), im.IdPessoa,
 	).Scan(&lastId)
 
 	if err != nil {
@@ -39,12 +40,17 @@ func InsertImovelRepository(im model.Imovel) (int, error) {
 func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
 	args := []interface{}{}
 	query := `SELECT id, tipo, rua, numero, bairro, cidade, estado, cep, pais,
-                     area, quartos, banheiros, suites, vagas, andar,
-                     valor, situacao, disponivel, descricao, imagem, id_pessoa
+                     area, quartos, banheiros, vagas, andar,
+                     valor, situacao, disponivel, descricao, imagem, imagem_type, id_pessoa
               FROM imoveis WHERE 1=1`
 
 	paramIndex := 1
 
+	if filter.Id != 0 {
+		query += fmt.Sprintf(" AND id = $%d", paramIndex)
+		args = append(args, filter.Id)
+		paramIndex++
+	}
 	if filter.Situacao != "" {
 		query += fmt.Sprintf(" AND situacao = $%d", paramIndex)
 		args = append(args, filter.Situacao)
@@ -109,14 +115,14 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
 			&imovel.Area,
 			&imovel.Quartos,
 			&imovel.Banheiros,
-			&imovel.Suites,
 			&imovel.Vagas,
 			&imovel.Andar,
 			&imovel.Valor,
 			&imovel.Situacao,
 			&imovel.Disponivel,
 			&imovel.Descricao,
-			&imovel.Imagem,
+			pq.Array(&imovel.Imagem),
+			pq.Array(&imovel.ImagemType),
 			&imovel.IdPessoa,
 		)
 		if err != nil {
@@ -233,10 +239,14 @@ func UpdateImovelRepository(imovel model.AtualizarImovel) (int, error) {
 	}
 	if len(imovel.Imagem) > 0 {
 		fields = append(fields, fmt.Sprintf("imagem = $%d", paramIndex))
-		args = append(args, imovel.Imagem)
+		args = append(args, pq.Array(imovel.Imagem))
 		paramIndex++
 	}
-
+	if len(imovel.ImagemType) > 0 {
+		fields = append(fields, fmt.Sprintf("imagem_type = $%d", paramIndex))
+		args = append(args, pq.Array(imovel.ImagemType))
+		paramIndex++
+	}
 	if len(fields) == 0 {
 		log.Printf("⚠️ Nenhum campo foi enviado para atualização do imóvel ID %d\n", imovel.IdImovel)
 		return 0, fmt.Errorf("nenhum campo para atualizar")

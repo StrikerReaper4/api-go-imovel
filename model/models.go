@@ -28,7 +28,8 @@ type Imovel struct {
 	Situacao   string `json:"situacao"`
 	Disponivel bool   `json:"disponivel"`
 	Descricao  string `json:"descricao"`
-	Imagem     []byte `json:"imagem"`
+	Imagem     [][]byte `json:"imagem"`
+	ImagemType []string `json:"imagem_type"`
 	IdPessoa   int    `json:"id_pessoa"`
 }
 
@@ -42,6 +43,7 @@ type TokenResponse struct {
 }
 
 type Filtro struct {
+	Id 		  int    `json:"id_imovel"`
 	Pais      string `json:"pais"`
 	Situacao  string `json:"situacao"`
 	Tipo      string `json:"tipo"`
@@ -72,7 +74,8 @@ type AtualizarImovel struct {
 	Vagas     int    `json:"vagas"`
 	Valor     int    `json:"valor"`
 	Descricao string `json:"descricao"`
-	Imagem    []byte `json:"imagem"`
+	Imagem    [][]byte `json:"imagem"`
+	ImagemType []string `json:"imagem_type"`
 }
 
 type DeletarImovel struct {
