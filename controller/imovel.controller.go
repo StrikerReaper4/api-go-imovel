@@ -3,9 +3,8 @@ package controller
 import (
 	"apiGo/model"
 	"apiGo/service"
+	"apiGo/utils"
 	"encoding/json"
-	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -29,18 +28,17 @@ func CreateImovel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 📸 Lê o arquivo de imagem (opcional)
-	var imagemBytes []byte
-	file, _, err := r.FormFile("imagem")
-	if err == nil {
-		defer file.Close()
-		imagemBytes, err = io.ReadAll(file)
-		if err != nil {
-			http.Error(w, "Erro ao ler bytes da imagem: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else {
-		fmt.Println("⚠️ Nenhuma imagem enviada, seguindo sem arquivo.")
+	imagens, tipos, err := utils.ReadUploadedImages(r)
+
+	if err != nil{
+		http.Error(w, "Erro ao processar imagens" + err.Error(), http.StatusInternalServerError)
+		return
 	}
+	if len(imagens) == 0{
+		log.Println("Nenhuma imagem enviada, seguindo sem arquivo")
+		return
+	}	
+	
 
 	// Cria struct do imóvel com dados do formulário
 	imovel := model.Imovel{
@@ -62,7 +60,8 @@ func CreateImovel(w http.ResponseWriter, r *http.Request) {
 		Situacao:   r.FormValue("situacao"),
 		Disponivel: parseBool(r.FormValue("disponivel")),
 		Descricao:  r.FormValue("descricao"),
-		Imagem:     imagemBytes,
+		Imagem:     imagens,
+		ImagemType: tipos,
 		IdPessoa:   parseInt(r.FormValue("id_pessoa")),
 	}
 
@@ -159,19 +158,17 @@ func UpdateImovel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 🔹 Lê imagem, se enviada
-	var imagemBytes []byte
-	file, _, err := r.FormFile("imagem")
-	if err == nil {
-		defer file.Close()
-		imagemBytes, err = io.ReadAll(file)
-		if err != nil {
-			http.Error(w, "Erro ao ler bytes da imagem: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else {
-		fmt.Println("⚠️ Nenhuma imagem enviada, seguindo sem arquivo.")
-	}
+	imagens, tipos, err := utils.ReadUploadedImages(r)
 
+	if err != nil{
+		http.Error(w, "Erro ao processar imagens" + err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(imagens) == 0{
+		log.Println("Nenhuma imagem enviada, seguindo sem arquivo")
+		return
+	}
+	
 	// 🔹 Monta struct
 	imovel := model.AtualizarImovel{
 		IdImovel:  id,
@@ -190,7 +187,8 @@ func UpdateImovel(w http.ResponseWriter, r *http.Request) {
 		Valor:     parseInt(r.FormValue("valor")),
 		Situacao:  r.FormValue("situacao"),
 		Descricao: r.FormValue("descricao"),
-		Imagem:    imagemBytes,
+		Imagem:    imagens,
+		ImagemType: tipos,
 	}
 
 	// 🔹 Chama o service
