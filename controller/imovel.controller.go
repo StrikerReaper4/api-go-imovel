@@ -3,44 +3,59 @@ package controller
 import (
 	"apiGo/model"
 	"apiGo/service"
-	"apiGo/utils"
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 )
 
 // ==========================================
-// ✅ Criação de imóvel com suporte a multipart/form-data
+// ✅ Criação de imóvel com suporte a múltiplas imagens
 // ==========================================
 func CreateImovel(w http.ResponseWriter, r *http.Request) {
-	// Aceita apenas POST
 	if r.Method != http.MethodPost {
 		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Limite de 10MB para upload
-	err := r.ParseMultipartForm(10 << 20)
+	// Limite de até 50 MB para uploads
+	err := r.ParseMultipartForm(50 << 20)
 	if err != nil {
 		http.Error(w, "Erro ao processar formulário: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// 📸 Lê o arquivo de imagem (opcional)
-	imagens, tipos, err := utils.ReadUploadedImages(r)
+	// 🔹 Lê todas as imagens enviadas
+	files := r.MultipartForm.File["imagens"]
+	var imagens [][]byte
+	var tipos []string
 
-	if err != nil{
-		http.Error(w, "Erro ao processar imagens" + err.Error(), http.StatusInternalServerError)
-		return
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		if err != nil {
+			log.Println("Erro ao abrir imagem:", err)
+			continue
+		}
+		defer file.Close()
+
+		data, err := io.ReadAll(file)
+		if err != nil {
+			log.Println("Erro ao ler imagem:", err)
+			continue
+		}
+
+		imagens = append(imagens, data)
+		tipos = append(tipos, fileHeader.Header.Get("Content-Type"))
 	}
-	if len(imagens) == 0{
-		log.Println("Nenhuma imagem enviada, seguindo sem arquivo")
-		return
-	}	
-	
 
-	// Cria struct do imóvel com dados do formulário
+	if len(imagens) == 0 {
+		log.Println("⚠️ Nenhuma imagem enviada, seguindo sem arquivo.")
+	}
+
+	// Monta struct do imóvel
 	imovel := model.Imovel{
 		Tipo:       r.FormValue("tipo"),
 		Rua:        r.FormValue("rua"),
@@ -65,14 +80,12 @@ func CreateImovel(w http.ResponseWriter, r *http.Request) {
 		IdPessoa:   parseInt(r.FormValue("id_pessoa")),
 	}
 
-	// Chama o service para salvar no banco
 	imovel, err = service.CreateImovelService(imovel)
 	if err != nil {
 		http.Error(w, "Erro ao salvar imóvel: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Retorna o ID do imóvel criado
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Imóvel criado com sucesso!",
@@ -81,15 +94,84 @@ func CreateImovel(w http.ResponseWriter, r *http.Request) {
 }
 
 // ==========================================
-// ✅ Funções auxiliares
+// ✅ Atualização de imóvel (múltiplas imagens)
 // ==========================================
-func parseInt(s string) int {
-	v, _ := strconv.Atoi(s)
-	return v
-}
+func UpdateImovel(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(50 << 20)
+	if err != nil {
+		http.Error(w, "Erro ao processar formulário: "+err.Error(), http.StatusBadRequest)
+		return
+	}
 
-func parseBool(s string) bool {
-	return s == "true" || s == "1" || s == "on"
+	id := parseInt(r.FormValue("id"))
+	if id == 0 {
+		http.Error(w, "ID do imóvel é obrigatório", http.StatusBadRequest)
+		return
+	}
+
+	files := r.MultipartForm.File["imagens"]
+	var imagens [][]byte
+	var tipos []string
+
+	for _, fileHeader := range files {
+		file, err := fileHeader.Open()
+		if err != nil {
+			log.Println("Erro ao abrir imagem:", err)
+			continue
+		}
+		defer file.Close()
+
+		data, err := io.ReadAll(file)
+		if err != nil {
+			log.Println("Erro ao ler imagem:", err)
+			continue
+		}
+
+		imagens = append(imagens, data)
+		tipos = append(tipos, fileHeader.Header.Get("Content-Type"))
+	}
+
+	if len(imagens) == 0 {
+		log.Println("⚠️ Nenhuma imagem enviada, seguindo sem arquivo.")
+	}
+
+	imovel := model.AtualizarImovel{
+		IdImovel:  id,
+		Tipo:      r.FormValue("tipo"),
+		Rua:       r.FormValue("rua"),
+		Numero:    r.FormValue("numero"),
+		Bairro:    r.FormValue("bairro"),
+		Cidade:    r.FormValue("cidade"),
+		Estado:    r.FormValue("estado"),
+		Cep:       r.FormValue("cep"),
+		Pais:      r.FormValue("pais"),
+		Area:      parseInt(r.FormValue("area")),
+		Quartos:   parseInt(r.FormValue("quartos")),
+		Banheiros: parseInt(r.FormValue("banheiros")),
+		Vagas:     parseInt(r.FormValue("vagas")),
+		Valor:     parseInt(r.FormValue("valor")),
+		Situacao:  r.FormValue("situacao"),
+		Descricao: r.FormValue("descricao"),
+		Imagem:    imagens,
+		ImagemType: tipos,
+	}
+
+	rowsAffected, err := service.UpdateImovelService(imovel)
+	if err != nil {
+		http.Error(w, "Erro ao atualizar imóvel: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if rowsAffected == 0 {
+		http.Error(w, "Nenhum imóvel encontrado com esse ID", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Imóvel atualizado com sucesso!",
+		"id":      imovel.IdImovel,
+	})
 }
 
 // ==========================================
@@ -134,79 +216,18 @@ func DeleteImovel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(rowsAffected)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	log.Println("imovel deletado com sucesso", rowsAffected)
+	json.NewEncoder(w).Encode(rowsAffected)
+	log.Println("✅ Imóvel deletado com sucesso:", rowsAffected)
 }
 
-func UpdateImovel(w http.ResponseWriter, r *http.Request) {
-	// 🔹 Primeiro: parseia o formulário
-	err := r.ParseMultipartForm(10 << 20)
-	if err != nil {
-		http.Error(w, "Erro ao processar formulário: "+err.Error(), http.StatusBadRequest)
-		return
-	}
+// ==========================================
+// ✅ Funções auxiliares
+// ==========================================
+func parseInt(s string) int {
+	v, _ := strconv.Atoi(s)
+	return v
+}
 
-	// 🔹 Converte ID
-	id := parseInt(r.FormValue("id"))
-	if id == 0 {
-		http.Error(w, "ID do imóvel é obrigatório", http.StatusBadRequest)
-		return
-	}
-
-	// 🔹 Lê imagem, se enviada
-	imagens, tipos, err := utils.ReadUploadedImages(r)
-
-	if err != nil{
-		http.Error(w, "Erro ao processar imagens" + err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if len(imagens) == 0{
-		log.Println("Nenhuma imagem enviada, seguindo sem arquivo")
-		return
-	}
-	
-	// 🔹 Monta struct
-	imovel := model.AtualizarImovel{
-		IdImovel:  id,
-		Tipo:      r.FormValue("tipo"),
-		Rua:       r.FormValue("rua"),
-		Numero:    r.FormValue("numero"),
-		Bairro:    r.FormValue("bairro"),
-		Cidade:    r.FormValue("cidade"),
-		Estado:    r.FormValue("estado"),
-		Cep:       r.FormValue("cep"),
-		Pais:      r.FormValue("pais"),
-		Area:      parseInt(r.FormValue("area")),
-		Quartos:   parseInt(r.FormValue("quartos")),
-		Banheiros: parseInt(r.FormValue("banheiros")),
-		Vagas:     parseInt(r.FormValue("vagas")),
-		Valor:     parseInt(r.FormValue("valor")),
-		Situacao:  r.FormValue("situacao"),
-		Descricao: r.FormValue("descricao"),
-		Imagem:    imagens,
-		ImagemType: tipos,
-	}
-
-	// 🔹 Chama o service
-	rowsAffected, err := service.UpdateImovelService(imovel)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	if rowsAffected == 0 {
-		http.Error(w, "Nenhum imóvel encontrado com esse ID", http.StatusNotFound)
-		return
-	}
-
-	// 🔹 Resposta JSON
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"message": "Imóvel atualizado com sucesso!",
-		"id":      imovel.IdImovel,
-	})
+func parseBool(s string) bool {
+	return s == "true" || s == "1" || s == "on"
 }
