@@ -129,6 +129,13 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
 		if err != nil {
 			return nil, err
 		}
+		
+		if imovel.ImagemType == nil {
+			imovel.ImagemType = []string{}
+		}
+		if imovel.Imagem == nil {
+			imovel.Imagem = [][]byte{}
+		}
 		imoveis = append(imoveis, imovel)
 	}
 
