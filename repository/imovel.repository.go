@@ -72,7 +72,11 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
 		args = append(args, filter.Cidade)
 		paramIndex++
 	}
+	if filter.Ate <= 0{
+		filter.Ate = 100000000
+	}
 	if filter.De > 0 && filter.Ate > 0 {
+	
 		query += fmt.Sprintf(" AND valor BETWEEN $%d AND $%d", paramIndex, paramIndex+1)
 		args = append(args, filter.De, filter.Ate)
 		paramIndex += 2
