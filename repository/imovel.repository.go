@@ -75,6 +75,7 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
 	if filter.Ate <= 0{
 		filter.Ate = 100000000
 	}
+	
 	if filter.De > 0 && filter.Ate > 0 {
 	
 		query += fmt.Sprintf(" AND valor BETWEEN $%d AND $%d", paramIndex, paramIndex+1)
@@ -82,19 +83,33 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
 		paramIndex += 2
 	}
 	if filter.Quartos != 0 {
-		query += fmt.Sprintf(" AND quartos = $%d", paramIndex)
-		args = append(args, filter.Quartos)
-		paramIndex++
+		if filter.Quartos == 5{
+			query += " AND quartos BETWEEN 5 AND 100"
+		}else{
+			query += fmt.Sprintf(" AND quartos = $%d", paramIndex)
+			args = append(args, filter.Quartos)
+			paramIndex++
+		}
+		
 	}
 	if filter.Vagas != 0 {
-		query += fmt.Sprintf(" AND vagas = $%d", paramIndex)
-		args = append(args, filter.Vagas)
-		paramIndex++
+		if filter.Vagas == 5{
+			query += " AND vagas BETWEEN 5 AND 100"
+		}else{
+			query += fmt.Sprintf(" AND vagas = $%d", paramIndex)
+			args = append(args, filter.Vagas)
+			paramIndex++
+		}
 	}
 	if filter.Banheiros != 0 {
-		query += fmt.Sprintf(" AND banheiros = $%d", paramIndex)
-		args = append(args, filter.Banheiros)
-		paramIndex++
+		if filter.Banheiros == 5{
+			query += " AND banheiros BETWEEN 5 AND 100"
+		}else{
+			query += fmt.Sprintf(" AND banheiros = $%d", paramIndex)
+			args = append(args, filter.Banheiros)
+			paramIndex++
+		}
+	
 	}
 
 	rows, err := config.DB.Query(query, args...)
