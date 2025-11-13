@@ -52,6 +52,11 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
 		args = append(args, filter.Id)
 		paramIndex++
 	}
+	if filter.Pais != "" {
+		query += fmt.Sprintf(" AND pais = $%d", paramIndex)
+		args = append(args, filter.Pais)
+		paramIndex++
+	}
 	if filter.Situacao != "" {
 		query += fmt.Sprintf(" AND situacao = $%d", paramIndex)
 		args = append(args, filter.Situacao)
