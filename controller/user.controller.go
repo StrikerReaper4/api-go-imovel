@@ -5,10 +5,9 @@ import (
 	"apiGo/service"
 	"encoding/json"
 	"net/http"
-	"log"
 )
 
-func Handler(w http.ResponseWriter, r *http.Request){
+func Handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	answer := map[string]string{
@@ -16,63 +15,52 @@ func Handler(w http.ResponseWriter, r *http.Request){
 	}
 
 	json.NewEncoder(w).Encode(answer)
-	
-	
 }
 
-func Create(w http.ResponseWriter, r * http.Request){
-	
+func Create(w http.ResponseWriter, r *http.Request) {
 	var p model.Pessoa
 
 	decod := json.NewDecoder(r.Body)
 
 	err := decod.Decode(&p)
 
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		
 	}
 
 	result, err := service.CreateService(p)
 
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
-
 	json.NewEncoder(w).Encode(result)
-
-
 }
 
-func Login(w http.ResponseWriter, r * http.Request){
-
+func Login(w http.ResponseWriter, r *http.Request) {
 	var login model.Login
 
 	decode := json.NewDecoder(r.Body)
 
 	err := decode.Decode(&login)
 
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	p, token , err := service.LoginService(login.Email, login.Senha)
-	
-	log.Println("Confirmando:",p)
+	p, token, err := service.LoginService(login.Email, login.Senha)
 
-	if err != nil{
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(w).Encode(map[string] interface{}{
-		"user": p,
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"user":  p,
 		"token": token,
 	})
-
 }

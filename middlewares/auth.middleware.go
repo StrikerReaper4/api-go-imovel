@@ -7,11 +7,11 @@ import (
 )
 
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return  func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 
 		authReader := r.Header.Get("Authorization")
 
-		if authReader == ""{
+		if authReader == "" {
 			http.Error(w, "token não fornecido", http.StatusUnauthorized)
 			return
 		}
@@ -20,24 +20,22 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		claims, err := utils.ValidateToken(tokenStr)
 
-		if err != nil{
+		if err != nil {
 			http.Error(w, "token inválido", http.StatusForbidden)
 			return
 		}
 
 		role, ok := claims["role"].(string)
 
-		if !ok{
+		if !ok {
 			http.Error(w, "role inválida", http.StatusUnauthorized)
 			return
 		}
-		
-		if role != "admin"{
+
+		if role != "admin" {
 			http.Error(w, "acesso inválido", http.StatusUnauthorized)
 			return
 		}
-
-		
 
 		next(w, r)
 	}

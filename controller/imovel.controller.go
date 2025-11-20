@@ -5,39 +5,27 @@ import (
 	"apiGo/service"
 	"apiGo/utils"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 )
 
-// ==========================================
-// ✅ Criação de imóvel com suporte a múltiplas imagens
-// ==========================================
 func CreateImovel(w http.ResponseWriter, r *http.Request) {
-	// Aceita apenas POST
 	if r.Method != http.MethodPost {
 		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Limite de 10MB por arquivo
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		http.Error(w, "Erro ao processar formulário: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	// 📸 Lê todas as imagens corretamente (1 ou várias)
 	imagens, tipos, err := utils.ReadUploadedImages(r)
 	if err != nil {
 		http.Error(w, "Erro ao processar imagens: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if len(imagens) == 0 {
-		log.Println("⚠️ Nenhuma imagem enviada — criando imóvel sem imagem.")
-	}
-
-	// Cria struct do imóvel
 	imovel := model.Imovel{
 		Tipo:       r.FormValue("tipo"),
 		Rua:        r.FormValue("rua"),
@@ -62,14 +50,12 @@ func CreateImovel(w http.ResponseWriter, r *http.Request) {
 		IdPessoa:   parseInt(r.FormValue("id_pessoa")),
 	}
 
-	// Chama o service
 	imovel, err = service.CreateImovelService(imovel)
 	if err != nil {
 		http.Error(w, "Erro ao salvar imóvel: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Retorno JSON
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"message": "Imóvel criado com sucesso!",
@@ -77,9 +63,6 @@ func CreateImovel(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ==========================================
-// ✅ Atualização de imóvel com múltiplas imagens
-// ==========================================
 func UpdateImovel(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		http.Error(w, "Erro ao processar formulário: "+err.Error(), http.StatusBadRequest)
@@ -96,10 +79,6 @@ func UpdateImovel(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Erro ao processar imagens: "+err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	if len(imagens) == 0 {
-		log.Println("⚠️ Nenhuma imagem enviada — atualização sem imagem.")
 	}
 
 	imovel := model.AtualizarImovel{
@@ -141,9 +120,6 @@ func UpdateImovel(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// ==========================================
-// ✅ Filtros, deleção e helpers
-// ==========================================
 func FilterImovel(w http.ResponseWriter, r *http.Request) {
 	var filter model.Filtro
 	if err := json.NewDecoder(r.Body).Decode(&filter); err != nil {
@@ -178,12 +154,8 @@ func DeleteImovel(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(rowsAffected)
-	log.Println("✅ Imóvel deletado com sucesso:", rowsAffected)
 }
 
-// ==========================================
-// ✅ Funções auxiliares
-// ==========================================
 func parseInt(s string) int {
 	v, _ := strconv.Atoi(s)
 	return v
