@@ -10,7 +10,7 @@ import (
 var DB *sql.DB
 
 func Connect() {
-	dsn := "postgresql://admin:UiE6EVgThtpXBDRUkf2xiBJCYFLYP1Cn@dpg-d419off5r7bs739aa2ug-a.oregon-postgres.render.com/imovel_q1jv"
+	dsn := "user=admin password=admin host=147.79.81.199 port=5432 dbname=bretasimoveisdb sslmode=disable"
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
