@@ -23,7 +23,7 @@ func main() {
 	http.HandleFunc("/atualizar/imovel", controller.UpdateImovel)
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:5173", "https://frontend-imovel-bretas.onrender.com"},
+		AllowedOrigins:   []string{"http://localhost:5173", "https://bretasimoveis.cloud"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
