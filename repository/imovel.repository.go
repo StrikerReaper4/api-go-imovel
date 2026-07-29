@@ -41,8 +41,8 @@ func InsertImovelRepository(im model.Imovel) (int, error) {
 func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
 	args := []interface{}{}
 	query := `SELECT id, tipo, rua, numero, bairro, cidade, estado, cep, pais,
-                     area, quartos, banheiros, vagas, andar,
-                     valor, situacao, disponivel, descricao, imagem, imagem_type, id_pessoa
+                    area, quartos, banheiros, vagas, andar,
+                    valor, situacao, disponivel, descricao, imagem, imagem_type, id_pessoa
               FROM imoveis WHERE 1=1`
 
 	paramIndex := 1
@@ -77,45 +77,55 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
 		args = append(args, filter.Cidade)
 		paramIndex++
 	}
-	if filter.Ate <= 0{
-		filter.Ate = 100000000
+	if filter.Ate <= 0 {
+		filter.Ate = 10000
 	}
-	
 	if filter.De > 0 && filter.Ate > 0 {
-	
 		query += fmt.Sprintf(" AND valor BETWEEN $%d AND $%d", paramIndex, paramIndex+1)
 		args = append(args, filter.De, filter.Ate)
 		paramIndex += 2
 	}
 	if filter.Quartos != 0 {
-		if filter.Quartos == 5{
+		if filter.Quartos == 5 {
 			query += " AND quartos BETWEEN 5 AND 100"
-		}else{
+		} else {
 			query += fmt.Sprintf(" AND quartos = $%d", paramIndex)
 			args = append(args, filter.Quartos)
 			paramIndex++
 		}
-		
 	}
 	if filter.Vagas != 0 {
-		if filter.Vagas == 5{
+		if filter.Vagas == 5 {
 			query += " AND vagas BETWEEN 5 AND 100"
-		}else{
+		} else {
 			query += fmt.Sprintf(" AND vagas = $%d", paramIndex)
 			args = append(args, filter.Vagas)
 			paramIndex++
 		}
 	}
 	if filter.Banheiros != 0 {
-		if filter.Banheiros == 5{
+		if filter.Banheiros == 5 {
 			query += " AND banheiros BETWEEN 5 AND 100"
-		}else{
+		} else {
 			query += fmt.Sprintf(" AND banheiros = $%d", paramIndex)
 			args = append(args, filter.Banheiros)
 			paramIndex++
 		}
-	
 	}
+
+	// ── Paginação ──────────────────────────────────────────────────────────────
+	// Garante valores padrão seguros caso o frontend não mande page/limit
+	if filter.Limit <= 0 {
+		filter.Limit = 20
+	}
+	if filter.Page <= 0 {
+		filter.Page = 1
+	}
+	offset := (filter.Page - 1) * filter.Limit
+
+	query += fmt.Sprintf(" ORDER BY id DESC LIMIT $%d OFFSET $%d", paramIndex, paramIndex+1)
+	args = append(args, filter.Limit, offset)
+	// ──────────────────────────────────────────────────────────────────────────
 
 	rows, err := config.DB.Query(query, args...)
 	if err != nil {
@@ -153,7 +163,7 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		if imovel.ImagemType == nil {
 			imovel.ImagemType = []string{}
 		}
@@ -204,30 +214,26 @@ func UpdateImovelRepository(imovel model.AtualizarImovel) (int, error) {
 		args = append(args, imovel.Bairro)
 		paramIndex++
 	}
-	if imovel.Rua != ""{
+	if imovel.Rua != "" {
 		fields = append(fields, fmt.Sprintf("rua = $%d", paramIndex))
 		args = append(args, imovel.Rua)
 		paramIndex++
 	}
-
-	if imovel.Pais != ""{
+	if imovel.Pais != "" {
 		fields = append(fields, fmt.Sprintf("pais = $%d", paramIndex))
 		args = append(args, imovel.Pais)
 		paramIndex++
 	}
-
 	if imovel.Situacao != "" {
 		fields = append(fields, fmt.Sprintf("situacao = $%d", paramIndex))
 		args = append(args, imovel.Situacao)
 		paramIndex++
 	}
-
-	if imovel.Cep != ""{
+	if imovel.Cep != "" {
 		fields = append(fields, fmt.Sprintf("cep = $%d", paramIndex))
 		args = append(args, imovel.Cep)
 		paramIndex++
 	}
-
 	if imovel.Numero != "" {
 		fields = append(fields, fmt.Sprintf("numero = $%d", paramIndex))
 		args = append(args, imovel.Numero)
@@ -238,7 +244,6 @@ func UpdateImovelRepository(imovel model.AtualizarImovel) (int, error) {
 		args = append(args, imovel.Vagas)
 		paramIndex++
 	}
-
 	if imovel.Tipo != "" {
 		fields = append(fields, fmt.Sprintf("tipo = $%d", paramIndex))
 		args = append(args, imovel.Tipo)
