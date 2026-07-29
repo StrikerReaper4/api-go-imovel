@@ -10,6 +10,7 @@ import (
 	"github.com/rs/cors"
 )
 
+
 func main() {
 	config.Connect()
 	defer config.DB.Close()
