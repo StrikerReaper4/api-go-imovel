@@ -9,28 +9,28 @@ type Pessoa struct {
 }
 
 type Imovel struct {
-	Id         int    `json:"ind"`
-	Tipo       string `json:"tipo"`
-	Rua        string `json:"rua"`
-	Numero     string `json:"numero"`
-	Bairro     string `json:"bairro"`
-	Cidade     string `json:"cidade"`
-	Estado     string `json:"estado"`
-	Cep        string `json:"cep"`
-	Pais       string `json:"pais"`
-	Area       int    `json:"area"`
-	Quartos    int    `json:"quartos"`
-	Banheiros  int    `json:"banheiros"`
-	Suites     int    `json:"suites"`
-	Vagas      int    `json:"vagas"`
-	Andar      int    `json:"andar"`
-	Valor      int    `json:"valor"`
-	Situacao   string `json:"situacao"`
-	Disponivel bool   `json:"disponivel"`
-	Descricao  string `json:"descricao"`
+	Id         int      `json:"ind"`
+	Tipo       string   `json:"tipo"`
+	Rua        string   `json:"rua"`
+	Numero     string   `json:"numero"`
+	Bairro     string   `json:"bairro"`
+	Cidade     string   `json:"cidade"`
+	Estado     string   `json:"estado"`
+	Cep        string   `json:"cep"`
+	Pais       string   `json:"pais"`
+	Area       int      `json:"area"`
+	Quartos    int      `json:"quartos"`
+	Banheiros  int      `json:"banheiros"`
+	Suites     int      `json:"suites"`
+	Vagas      int      `json:"vagas"`
+	Andar      int      `json:"andar"`
+	Valor      int      `json:"valor"`
+	Situacao   string   `json:"situacao"`
+	Disponivel bool     `json:"disponivel"`
+	Descricao  string   `json:"descricao"`
 	Imagem     [][]byte `json:"imagem"`
 	ImagemType []string `json:"imagem_type"`
-	IdPessoa   int    `json:"id_pessoa"`
+	IdPessoa   int      `json:"id_pessoa"`
 }
 
 type Login struct {
@@ -43,7 +43,7 @@ type TokenResponse struct {
 }
 
 type Filtro struct {
-	Id 		  int    `json:"id_imovel"`
+	Id        int    `json:"id_imovel"`
 	Pais      string `json:"pais"`
 	Situacao  string `json:"situacao"`
 	Tipo      string `json:"tipo"`
@@ -55,26 +55,29 @@ type Filtro struct {
 	Quartos   int    `json:"quartos"`
 	Vagas     int    `json:"vagas"`
 	Banheiros int    `json:"banheiros"`
+	// Paginação: Page começa em 1, Limit define quantos retornar por vez
+	Page  int `json:"page"`
+	Limit int `json:"limit"`
 }
 
 type AtualizarImovel struct {
-	IdImovel  int    `json:"id"`
-	Situacao  string `json:"situacao"`
-	Tipo      string `json:"tipo"`
-	Rua       string `json:"rua"`
-	Numero    string `json:"numero"`
-	Bairro    string `json:"bairro"`
-	Cidade    string `json:"cidade"`
-	Estado    string `json:"estado"`
-	Cep       string `json:"cep"`
-	Pais      string `json:"pais"`
-	Area      int    `json:"area"`
-	Quartos   int    `json:"quartos"`
-	Banheiros int    `json:"banheiros"`
-	Vagas     int    `json:"vagas"`
-	Valor     int    `json:"valor"`
-	Descricao string `json:"descricao"`
-	Imagem    [][]byte `json:"imagem"`
+	IdImovel   int      `json:"id"`
+	Situacao   string   `json:"situacao"`
+	Tipo       string   `json:"tipo"`
+	Rua        string   `json:"rua"`
+	Numero     string   `json:"numero"`
+	Bairro     string   `json:"bairro"`
+	Cidade     string   `json:"cidade"`
+	Estado     string   `json:"estado"`
+	Cep        string   `json:"cep"`
+	Pais       string   `json:"pais"`
+	Area       int      `json:"area"`
+	Quartos    int      `json:"quartos"`
+	Banheiros  int      `json:"banheiros"`
+	Vagas      int      `json:"vagas"`
+	Valor      int      `json:"valor"`
+	Descricao  string   `json:"descricao"`
+	Imagem     [][]byte `json:"imagem"`
 	ImagemType []string `json:"imagem_type"`
 }
 
