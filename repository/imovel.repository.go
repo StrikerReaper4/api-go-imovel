@@ -38,12 +38,12 @@ func InsertImovelRepository(im model.Imovel) (int, error) {
         return lastId, nil
 }
 
-func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
+// buildImovelWhere monta a cláusula WHERE (sem o "WHERE 1=1" inicial) a partir do
+// filtro. Devolve também os args e o próximo índice de parâmetro livre, para que a
+// mesma cláusula sirva tanto para o COUNT quanto para o SELECT paginado.
+func buildImovelWhere(filter model.Filtro) (string, []interface{}, int) {
         args := []interface{}{}
-        query := `SELECT id, tipo, rua, numero, bairro, cidade, estado, cep, pais,
-                    area, quartos, banheiros, vagas, andar,
-                    valor, situacao, disponivel, descricao, imagem, imagem_type, id_pessoa
-              FROM imoveis WHERE 1=1`
+        query := ""
 
         paramIndex := 1
 
@@ -75,6 +75,13 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
         if filter.Cidade != "" {
                 query += fmt.Sprintf(" AND cidade = $%d", paramIndex)
                 args = append(args, filter.Cidade)
+                paramIndex++
+        }
+        // Bairro: busca parcial e sem diferenciar maiúsculas/minúsculas.
+        // "centro" encontra "Centro", "Novo Centro" etc.
+        if strings.TrimSpace(filter.Bairro) != "" {
+                query += fmt.Sprintf(" AND bairro ILIKE '%%' || $%d || '%%'", paramIndex)
+                args = append(args, strings.TrimSpace(filter.Bairro))
                 paramIndex++
         }
         // Filtro de valor: aplica só quando ao menos um dos limites foi informado
@@ -123,6 +130,33 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
                 }
         }
 
+        return query, args, paramIndex
+}
+
+// FilterImovelRepository devolve a página pedida e, quando filter.WithTotal for true,
+// o total de registros que casam com o filtro (ignorando LIMIT/OFFSET).
+// Quando WithTotal é false o total volta como 0 e nenhuma query extra é executada.
+func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, int, error) {
+        where, whereArgs, paramIndex := buildImovelWhere(filter)
+
+        // ── Total de resultados (opcional) ─────────────────────────────────────────
+        total := 0
+        if filter.WithTotal {
+                countQuery := "SELECT COUNT(*) FROM imoveis WHERE 1=1" + where
+                if err := config.DB.QueryRow(countQuery, whereArgs...).Scan(&total); err != nil {
+                        log.Println("Erro ao contar imóveis:", err)
+                        return nil, 0, err
+                }
+        }
+
+        // ── Imagens: só a primeira na listagem, todas no detalhe ───────────────────
+        // O recorte acontece no próprio Postgres, então as demais imagens nem chegam
+        // a ser lidas do disco.
+        imagemExpr := "imagem, imagem_type"
+        if filter.Thumb {
+                imagemExpr = "imagem[1:1], imagem_type[1:1]"
+        }
+
         // ── Paginação ──────────────────────────────────────────────────────────────
         // Garante valores padrão seguros caso o frontend não mande page/limit
         if filter.Limit <= 0 {
@@ -133,13 +167,18 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
         }
         offset := (filter.Page - 1) * filter.Limit
 
-        query += fmt.Sprintf(" ORDER BY id DESC LIMIT $%d OFFSET $%d", paramIndex, paramIndex+1)
+        args := append([]interface{}{}, whereArgs...)
+        query := fmt.Sprintf(`SELECT id, tipo, rua, numero, bairro, cidade, estado, cep, pais,
+                    area, quartos, banheiros, vagas, andar,
+                    valor, situacao, disponivel, descricao, %s, id_pessoa
+              FROM imoveis WHERE 1=1%s ORDER BY id DESC LIMIT $%d OFFSET $%d`,
+                imagemExpr, where, paramIndex, paramIndex+1)
         args = append(args, filter.Limit, offset)
         // ──────────────────────────────────────────────────────────────────────────
 
         rows, err := config.DB.Query(query, args...)
         if err != nil {
-                return nil, err
+                return nil, 0, err
         }
         defer rows.Close()
 
@@ -171,7 +210,7 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
                         &imovel.IdPessoa,
                 )
                 if err != nil {
-                        return nil, err
+                        return nil, 0, err
                 }
 
                 if imovel.ImagemType == nil {
@@ -184,10 +223,10 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, error) {
         }
 
         if err = rows.Err(); err != nil {
-                return nil, err
+                return nil, 0, err
         }
 
-        return imoveis, nil
+        return imoveis, total, nil
 }
 
 func DeleteImovelRepository(id int) (int, error) {

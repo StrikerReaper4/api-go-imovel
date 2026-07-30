@@ -58,6 +58,11 @@ type Filtro struct {
 	// Paginação: Page começa em 1, Limit define quantos retornar por vez
 	Page  int `json:"page"`
 	Limit int `json:"limit"`
+	// Thumb: quando true, retorna apenas a PRIMEIRA imagem de cada imóvel.
+	// Usado na listagem — a página de detalhe não envia e recebe todas.
+	Thumb bool `json:"thumb"`
+	// WithTotal: quando true, a resposta vira {items, total} em vez de array puro.
+	WithTotal bool `json:"with_total"`
 }
 
 type AtualizarImovel struct {
