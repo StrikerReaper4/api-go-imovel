@@ -152,9 +152,14 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, int, error) {
         // ── Imagens: só a primeira na listagem, todas no detalhe ───────────────────
         // O recorte acontece no próprio Postgres, então as demais imagens nem chegam
         // a ser lidas do disco.
+        //
+        // Só `imagem` é fatiada. A coluna `imagem_type` é do tipo `text` (guarda o
+        // literal do array como string, e o driver pq faz o parse na leitura), e o
+        // Postgres não aceita subscript em text. Como são apenas strings curtas de
+        // MIME, trazê-la inteira não pesa — o recorte dela é feito em Go mais abaixo.
         imagemExpr := "imagem, imagem_type"
         if filter.Thumb {
-                imagemExpr = "imagem[1:1], imagem_type[1:1]"
+                imagemExpr = "imagem[1:1], imagem_type"
         }
 
         // ── Paginação ──────────────────────────────────────────────────────────────
@@ -168,15 +173,26 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, int, error) {
         offset := (filter.Page - 1) * filter.Limit
 
         args := append([]interface{}{}, whereArgs...)
-        query := fmt.Sprintf(`SELECT id, tipo, rua, numero, bairro, cidade, estado, cep, pais,
+        args = append(args, filter.Limit, offset)
+
+        montarQuery := func(imgExpr string) string {
+                return fmt.Sprintf(`SELECT id, tipo, rua, numero, bairro, cidade, estado, cep, pais,
                     area, quartos, banheiros, vagas, andar,
                     valor, situacao, disponivel, descricao, %s, id_pessoa
               FROM imoveis WHERE 1=1%s ORDER BY id DESC LIMIT $%d OFFSET $%d`,
-                imagemExpr, where, paramIndex, paramIndex+1)
-        args = append(args, filter.Limit, offset)
+                        imgExpr, where, paramIndex, paramIndex+1)
+        }
         // ──────────────────────────────────────────────────────────────────────────
 
-        rows, err := config.DB.Query(query, args...)
+        rows, err := config.DB.Query(montarQuery(imagemExpr), args...)
+        if err != nil && filter.Thumb {
+                // O recorte da imagem depende do tipo da coluna no banco. Se ele
+                // falhar, devolver todas as imagens é lento — mas é melhor do que
+                // derrubar a listagem inteira com um 500.
+                log.Println("Recorte de imagem falhou, buscando imagens completas:", err)
+                filter.Thumb = false
+                rows, err = config.DB.Query(montarQuery("imagem, imagem_type"), args...)
+        }
         if err != nil {
                 return nil, 0, err
         }
@@ -215,6 +231,10 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, int, error) {
 
                 if imovel.ImagemType == nil {
                         imovel.ImagemType = []string{}
+                }
+                // Mantém imagem e imagem_type com o mesmo tamanho na listagem.
+                if filter.Thumb && len(imovel.ImagemType) > 1 {
+                        imovel.ImagemType = imovel.ImagemType[:1]
                 }
                 if imovel.Imagem == nil {
                         imovel.Imagem = [][]byte{}
