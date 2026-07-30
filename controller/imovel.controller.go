@@ -127,13 +127,26 @@ func FilterImovel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imoveis, err := service.FilterImovelService(filter)
+	imoveis, total, err := service.FilterImovelService(filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+
+	// Retrocompatível: só devolve {items, total} quando o cliente pede.
+	// Sem a flag, a resposta continua sendo o array puro de sempre.
+	if filter.WithTotal {
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
+			"items": imoveis,
+			"total": total,
+		}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
 	if err := json.NewEncoder(w).Encode(imoveis); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
