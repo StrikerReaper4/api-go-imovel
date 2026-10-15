@@ -49,13 +49,19 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	p, token, err := service.LoginService(login.Email, login.Senha)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		// Não diferencia "email não existe" de "senha errada"
+		http.Error(w, "email ou senha inválidos", http.StatusUnauthorized)
+		return
 	}
+
+	// Nunca devolver o hash da senha para o navegador
+	p.Senha = ""
 
 	w.Header().Set("Content-Type", "application/json")
 

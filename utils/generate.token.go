@@ -2,12 +2,19 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const JWT_SECRET_KEY = "293829452039stghsetg"
+// A chave vem da variável JWT_SECRET (systemd). O valor fixo é só fallback.
+func jwtSecret() []byte {
+	if s := os.Getenv("JWT_SECRET"); s != "" {
+		return []byte(s)
+	}
+	return []byte("293829452039stghsetg")
+}
 
 func GenerateToken(userId int, email string, role string) (string, error) {
 	claims := jwt.MapClaims{
@@ -19,7 +26,7 @@ func GenerateToken(userId int, email string, role string) (string, error) {
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenStr, err := token.SignedString([]byte(JWT_SECRET_KEY))
+	tokenStr, err := token.SignedString(jwtSecret())
 
 	if err != nil {
 		return "", err
@@ -34,7 +41,7 @@ func ValidateToken(tokenStr string) (jwt.MapClaims, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("token inválido")
 		}
-		return []byte(JWT_SECRET_KEY), nil
+		return jwtSecret(), nil
 	})
 
 	if err != nil {

@@ -3,6 +3,8 @@ package main
 import (
 	"apiGo/config"
 	"apiGo/controller"
+	"apiGo/middlewares"
+	"apiGo/repository"
 	"compress/gzip"
 	"io"
 	"log"
@@ -50,13 +52,23 @@ func main() {
 	config.Connect()
 	defer config.DB.Close()
 
+	if err := repository.EnsurePasswordResetTable(); err != nil {
+		log.Fatalf("Erro ao criar tabela password_resets: %v", err)
+	}
+
 	http.HandleFunc("/", controller.Handler)
 	http.HandleFunc("/criar/usuario", controller.Create)
 	http.HandleFunc("/login/usuario", controller.Login)
-	http.HandleFunc("/criar/imovel", controller.CreateImovel)
+	http.HandleFunc("/criar/imovel", middlewares.AuthMiddleware(controller.CreateImovel))
 	http.HandleFunc("/filtrar/imoveis", controller.FilterImovel)
-	http.HandleFunc("/deletar/imovel", controller.DeleteImovel)
-	http.HandleFunc("/atualizar/imovel", controller.UpdateImovel)
+	http.HandleFunc("/deletar/imovel", middlewares.AuthMiddleware(controller.DeleteImovel))
+	http.HandleFunc("/atualizar/imovel", middlewares.AuthMiddleware(controller.UpdateImovel))
+
+	// Conta do admin
+	http.HandleFunc("/admin/criar", middlewares.AuthMiddleware(controller.CreateAdmin))
+	http.HandleFunc("/admin/alterar-senha", middlewares.AuthMiddleware(controller.ChangePassword))
+	http.HandleFunc("/senha/esqueci", controller.ForgotPassword)
+	http.HandleFunc("/senha/redefinir", controller.ResetPassword)
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{
