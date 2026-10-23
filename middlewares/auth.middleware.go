@@ -38,7 +38,7 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if role != "admin" {
+		if !strings.EqualFold(strings.TrimSpace(role), "admin") {
 			http.Error(w, "acesso inválido", http.StatusForbidden)
 			return
 		}
