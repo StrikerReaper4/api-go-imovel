@@ -177,7 +177,7 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, int, error) {
 
         montarQuery := func(imgExpr string) string {
                 return fmt.Sprintf(`SELECT id, tipo, rua, numero, bairro, cidade, estado, cep, pais,
-                    area, quartos, banheiros, vagas, andar,
+                    area, quartos, banheiros, suites, vagas, andar,
                     valor, situacao, disponivel, descricao, %s, id_pessoa
               FROM imoveis WHERE 1=1%s ORDER BY id DESC LIMIT $%d OFFSET $%d`,
                         imgExpr, where, paramIndex, paramIndex+1)
@@ -215,6 +215,7 @@ func FilterImovelRepository(filter model.Filtro) ([]model.Imovel, int, error) {
                         &imovel.Area,
                         &imovel.Quartos,
                         &imovel.Banheiros,
+                        &imovel.Suites,
                         &imovel.Vagas,
                         &imovel.Andar,
                         &imovel.Valor,
