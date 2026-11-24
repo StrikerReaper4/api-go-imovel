@@ -115,7 +115,7 @@ func ForgotPasswordService(email string) error {
 		}
 		return err
 	}
-	if p.Role != "admin" {
+	if !strings.EqualFold(strings.TrimSpace(p.Role), "admin") {
 		return nil
 	}
 
