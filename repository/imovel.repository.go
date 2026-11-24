@@ -77,10 +77,12 @@ func buildImovelWhere(filter model.Filtro) (string, []interface{}, int) {
                 args = append(args, filter.Cidade)
                 paramIndex++
         }
-        // Bairro: busca parcial e sem diferenciar maiúsculas/minúsculas.
-        // "centro" encontra "Centro", "Novo Centro" etc.
+        // Busca por texto: parcial, sem diferenciar maiúsculas/minúsculas, no
+        // bairro, na cidade ou no estado. "centro" acha "Novo Centro"; "lisboa"
+        // e "orlando" acham pela cidade — EUA e Portugal não têm lista de
+        // cidades no filtro (a do IBGE é só do Brasil).
         if strings.TrimSpace(filter.Bairro) != "" {
-                query += fmt.Sprintf(" AND bairro ILIKE '%%' || $%d || '%%'", paramIndex)
+                query += fmt.Sprintf(" AND (bairro ILIKE '%%' || $%[1]d || '%%' OR cidade ILIKE '%%' || $%[1]d || '%%' OR estado ILIKE '%%' || $%[1]d || '%%')", paramIndex)
                 args = append(args, strings.TrimSpace(filter.Bairro))
                 paramIndex++
         }
