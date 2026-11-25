@@ -37,7 +37,7 @@ var (
 )
 
 func IsUserError(err error) bool {
-	for _, e := range []error{ErrSenhaCurta, ErrSenhaAtual, ErrEmailInvalido, ErrEmailEmUso, ErrNomeVazio, ErrTokenInvalido} {
+	for _, e := range []error{ErrSenhaCurta, ErrSenhaAtual, ErrEmailInvalido, ErrEmailEmUso, ErrNomeVazio, ErrTokenInvalido, ErrExcluirASiMesmo, ErrUltimoAdmin, ErrAdminInexistente} {
 		if errors.Is(err, e) {
 			return true
 		}

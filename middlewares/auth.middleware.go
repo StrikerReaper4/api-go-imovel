@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"apiGo/repository"
 	"apiGo/utils"
 	"context"
 	"net/http"
@@ -45,6 +46,16 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		// jwt decodifica números como float64
 		userId, _ := claims["user_id"].(float64)
+
+		// O token vale por horas; confere no banco se a conta ainda existe e
+		// ainda é admin. Sem isso, um admin excluído continuaria mexendo no
+		// catálogo até o token expirar.
+		p, err := repository.FindById(int(userId))
+		if err != nil || !strings.EqualFold(strings.TrimSpace(p.Role), "admin") {
+			http.Error(w, "conta sem acesso", http.StatusUnauthorized)
+			return
+		}
+
 		ctx := context.WithValue(r.Context(), UserIdKey, int(userId))
 
 		next(w, r.WithContext(ctx))

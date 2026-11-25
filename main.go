@@ -67,6 +67,8 @@ func main() {
 	// Conta do admin
 	http.HandleFunc("/admin/criar", middlewares.AuthMiddleware(controller.CreateAdmin))
 	http.HandleFunc("/admin/alterar-senha", middlewares.AuthMiddleware(controller.ChangePassword))
+	http.HandleFunc("/admin/listar", middlewares.AuthMiddleware(controller.ListAdmins))
+	http.HandleFunc("/admin/excluir", middlewares.AuthMiddleware(controller.DeleteAdmin))
 	http.HandleFunc("/senha/esqueci", controller.ForgotPassword)
 	http.HandleFunc("/senha/redefinir", controller.ResetPassword)
 

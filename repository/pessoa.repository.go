@@ -101,3 +101,52 @@ func ConsumePasswordReset(tokenHash string) (int, error) {
 	`, tokenHash).Scan(&pessoaId)
 	return pessoaId, err
 }
+
+// ── Administradores ──────────────────────────────────────────────────────────
+
+// ListAdmins devolve os admins sem a senha.
+func ListAdmins() ([]model.Pessoa, error) {
+	rows, err := config.DB.Query(`
+		SELECT id, nome, email, role
+		FROM pessoas
+		WHERE LOWER(TRIM(role)) = 'admin'
+		ORDER BY id
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	admins := []model.Pessoa{}
+	for rows.Next() {
+		var p model.Pessoa
+		if err := rows.Scan(&p.Id, &p.Nome, &p.Email, &p.Role); err != nil {
+			return nil, err
+		}
+		admins = append(admins, p)
+	}
+	return admins, rows.Err()
+}
+
+// DeleteAdminTransferindo apaga o admin `alvo` e, antes, passa os imóveis dele
+// para `novoDono`. Sem isso o ON DELETE CASCADE de imoveis.id_pessoa apagaria
+// todos os imóveis cadastrados por ele. Tudo numa transação: ou faz as duas
+// coisas, ou nenhuma.
+func DeleteAdminTransferindo(alvo, novoDono int) (int64, error) {
+	tx, err := config.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+
+	res, err := tx.Exec(`UPDATE imoveis SET id_pessoa = $1 WHERE id_pessoa = $2`, novoDono, alvo)
+	if err != nil {
+		return 0, err
+	}
+	movidos, _ := res.RowsAffected()
+
+	if _, err := tx.Exec(`DELETE FROM pessoas WHERE id = $1 AND LOWER(TRIM(role)) = 'admin'`, alvo); err != nil {
+		return 0, err
+	}
+	return movidos, tx.Commit()
+}

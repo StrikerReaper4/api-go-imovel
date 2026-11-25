@@ -117,3 +117,38 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"mensagem": "senha redefinida"})
 }
+
+// POST /admin/listar  (admin logado) — lista os administradores
+func ListAdmins(w http.ResponseWriter, r *http.Request) {
+	if !onlyPost(w, r) {
+		return
+	}
+	admins, err := service.ListAdminsService()
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	userId, _ := r.Context().Value(middlewares.UserIdKey).(int)
+	writeJSON(w, http.StatusOK, map[string]any{"admins": admins, "eu": userId})
+}
+
+// POST /admin/excluir  (admin logado) — { id }
+func DeleteAdmin(w http.ResponseWriter, r *http.Request) {
+	if !onlyPost(w, r) {
+		return
+	}
+	var body struct {
+		Id int `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Id <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"erro": "dados inválidos"})
+		return
+	}
+	userId, _ := r.Context().Value(middlewares.UserIdKey).(int)
+	movidos, err := service.DeleteAdminService(userId, body.Id)
+	if err != nil {
+		writeServiceError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"mensagem": "administrador excluído", "imoveis_transferidos": movidos})
+}
