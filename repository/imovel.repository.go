@@ -77,12 +77,15 @@ func buildImovelWhere(filter model.Filtro) (string, []interface{}, int) {
                 args = append(args, filter.Cidade)
                 paramIndex++
         }
-        // Busca por texto: parcial, sem diferenciar maiúsculas/minúsculas, no
-        // bairro, na cidade ou no estado. "centro" acha "Novo Centro"; "lisboa"
-        // e "orlando" acham pela cidade — EUA e Portugal não têm lista de
-        // cidades no filtro (a do IBGE é só do Brasil).
+        // Busca por texto: parcial, sem diferenciar maiúsculas/minúsculas nem
+        // acentos, no bairro, na cidade ou no estado. "centro" acha "Novo
+        // Centro"; "sao paulo" acha "São Paulo"; "lisboa" e "orlando" acham pela
+        // cidade — EUA e Portugal não têm lista de cidades no filtro (a do IBGE
+        // é só do Brasil).
         if strings.TrimSpace(filter.Bairro) != "" {
-                query += fmt.Sprintf(" AND (bairro ILIKE '%%' || $%[1]d || '%%' OR cidade ILIKE '%%' || $%[1]d || '%%' OR estado ILIKE '%%' || $%[1]d || '%%')", paramIndex)
+                termo := fmt.Sprintf("'%%' || %s || '%%'", semAcento(fmt.Sprintf("$%d", paramIndex)))
+                query += fmt.Sprintf(" AND (%s LIKE %s OR %s LIKE %s OR %s LIKE %s)",
+                        semAcento("bairro"), termo, semAcento("cidade"), termo, semAcento("estado"), termo)
                 args = append(args, strings.TrimSpace(filter.Bairro))
                 paramIndex++
         }
@@ -104,30 +107,15 @@ func buildImovelWhere(filter model.Filtro) (string, []interface{}, int) {
                 args = append(args, filter.Ate)
                 paramIndex++
         }
-        if filter.Quartos != 0 {
-                if filter.Quartos == 5 {
-                        query += " AND quartos BETWEEN 5 AND 100"
-                } else {
-                        query += fmt.Sprintf(" AND quartos = $%d", paramIndex)
-                        args = append(args, filter.Quartos)
-                        paramIndex++
-                }
-        }
-        if filter.Vagas != 0 {
-                if filter.Vagas == 5 {
-                        query += " AND vagas BETWEEN 5 AND 100"
-                } else {
-                        query += fmt.Sprintf(" AND vagas = $%d", paramIndex)
-                        args = append(args, filter.Vagas)
-                        paramIndex++
-                }
-        }
-        if filter.Banheiros != 0 {
-                if filter.Banheiros == 5 {
-                        query += " AND banheiros BETWEEN 5 AND 100"
-                } else {
-                        query += fmt.Sprintf(" AND banheiros = $%d", paramIndex)
-                        args = append(args, filter.Banheiros)
+        // Quartos, vagas e banheiros são "no mínimo": o site mostra "3+ quartos",
+        // então 3 traz os de 3, 4, 5… (antes era igual a 3 e escondia os maiores).
+        for _, minimo := range []struct {
+                coluna string
+                valor  int
+        }{{"quartos", filter.Quartos}, {"vagas", filter.Vagas}, {"banheiros", filter.Banheiros}} {
+                if minimo.valor > 0 {
+                        query += fmt.Sprintf(" AND %s >= $%d", minimo.coluna, paramIndex)
+                        args = append(args, minimo.valor)
                         paramIndex++
                 }
         }
@@ -371,4 +359,11 @@ func UpdateImovelRepository(imovel model.AtualizarImovel) (int, error) {
 
         rowsAffected, _ := result.RowsAffected()
         return int(rowsAffected), nil
+}
+
+// semAcento devolve a expressão SQL em minúsculas e sem acentos, para a busca
+// por texto achar "São Paulo" digitando "sao paulo". Usa translate() em vez da
+// extensão unaccent para não depender de nada instalado no banco.
+func semAcento(expr string) string {
+        return fmt.Sprintf("translate(lower(%s), 'áàâãäéèêëíìîïóòôõöúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn')", expr)
 }
